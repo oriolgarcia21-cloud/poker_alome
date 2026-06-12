@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Poker Night</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+:root {
+  --bg: #080810;
+  --s1: #0f0f1a;
+  --s2: #161625;
+  --s3: #1e1e30;
+  --s4: #26263a;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.11);
+  --t1: #f0f0f8;
+  --t2: #8888a8;
+  --t3: #44445a;
+  --v: #6c5ce7;
+  --vl: #a29bfe;
+  --vm: #8b7ff5;
+  --vbg: rgba(108,92,231,0.12);
+  --vbg2: rgba(108,92,231,0.22);
+  --green: #00cec9;
+  --green2: #55efc4;
+  --gbg: rgba(0,206,201,0.1);
+  --red: #ff6b6b;
+  --rbg: rgba(255,107,107,0.1);
+  --gold: #fdcb6e;
+  --gold2: #e17055;
+  --goldbg: rgba(253,203,110,0.12);
+  --r: 18px;
+  --r-sm: 12px;
+  --nav-h: 70px;
+  --safe: env(safe-area-inset-bottom, 0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;background:var(--bg)}
+body{
+  height:100%;background:var(--bg);color:var(--t1);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:15px;line-height:1.5;overflow:hidden;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:430px;margin:0 auto;position:relative;overflow:hidden}
+
+/* AMBIENT GLOW */
+#glow{position:fixed;pointer-events:none;z-index:0;width:100%;max-width:430px;left:50%;transform:translateX(-50%)}
+.glow-orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.18;transition:all 1.2s ease}
+#g1{width:300px;height:300px;background:var(--v);top:-60px;left:-80px}
+#g2{width:200px;height:200px;background:var(--green);top:40px;right:-40px}
+
+/* PAGES */
+.page{position:absolute;inset:0;bottom:calc(var(--nav-h) + var(--safe));overflow-y:auto;overflow-x:hidden;display:none;z-index:1;-webkit-overflow-scrolling:touch}
+.page.active{display:block}
+.page-inner{padding:0 16px 32px}
+
+/* TOPBAR */
+.topbar{padding:54px 20px 12px;position:sticky;top:0;z-index:20;background:transparent}
+.topbar::before{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,var(--bg) 70%,transparent);z-index:-1}
+.topbar h1{font-size:32px;font-weight:800;letter-spacing:-1px;color:var(--t1)}
+.topbar-sub{font-size:13px;color:var(--t3);margin-top:1px;letter-spacing:0.2px}
+.topbar-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.topbar-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--green);background:var(--gbg);border:1px solid rgba(0,206,201,0.2);border-radius:20px;padding:3px 10px;letter-spacing:0.3px}
+.topbar-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+
+/* NAV */
+.bottomnav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:430px;height:calc(var(--nav-h) + var(--safe));
+  padding-bottom:var(--safe);
+  background:rgba(8,8,16,0.92);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
+  border-top:0.5px solid var(--border2);display:flex;z-index:100
+}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:var(--t3);cursor:pointer;padding:8px 0;transition:color 0.2s;min-height:44px;position:relative}
+.nav-btn.active{color:var(--vl)}
+.nav-icon{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background 0.2s}
+.nav-btn.active .nav-icon{background:var(--vbg)}
+.nav-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn span{font-size:9px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase}
+.live-pip{position:absolute;top:8px;right:calc(50% - 16px);width:6px;height:6px;border-radius:50%;background:var(--green);border:1.5px solid var(--bg);display:none}
+.live-pip.on{display:block;animation:blink 1.4s infinite}
+
+/* CARDS */
+.card{background:var(--s2);border:0.5px solid var(--border2);border-radius:var(--r);padding:16px;margin-bottom:10px}
+.card-glow{position:relative;overflow:hidden}
+.card-glow::before{content:'';position:absolute;inset:0;border-radius:var(--r);background:linear-gradient(135deg,rgba(108,92,231,0.06) 0%,transparent 60%);pointer-events:none}
+.card-title{font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:14px}
+.slabel{font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:1.2px;margin:22px 0 10px}
+
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:var(--r-sm);font-size:15px;font-weight:700;cursor:pointer;padding:15px 20px;width:100%;min-height:52px;transition:transform 0.12s,opacity 0.12s;letter-spacing:-0.2px;font-family:inherit}
+.btn:active{transform:scale(0.96);opacity:0.8}
+.btn-primary{background:linear-gradient(135deg,var(--v),#8e44ad);color:#fff;box-shadow:0 4px 20px rgba(108,92,231,0.3)}
+.btn-secondary{background:var(--s3);color:var(--t1);border:0.5px solid var(--border2)}
+.btn-ghost{background:transparent;color:var(--vl);border:1.5px solid rgba(108,92,231,0.3)}
+.btn-danger{background:var(--rbg);color:var(--red);border:1px solid rgba(255,107,107,0.2)}
+.btn-warn{background:var(--goldbg);color:var(--gold);border:1px solid rgba(253,203,110,0.25)}
+.btn-sm{padding:9px 15px;font-size:13px;min-height:38px;border-radius:9px;width:auto}
+.btn-green{background:linear-gradient(135deg,#00b09b,#00cec9);color:#fff;box-shadow:0 4px 16px rgba(0,206,201,0.25)}
+
+/* INPUTS */
+input[type=number],input[type=text]{width:100%;background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r-sm);color:var(--t1);font-size:16px;padding:13px 15px;outline:none;transition:border-color 0.15s,box-shadow 0.15s;-webkit-appearance:none;appearance:none;font-family:inherit}
+input:focus{border-color:var(--vl);box-shadow:0 0 0 3px rgba(108,92,231,0.12)}
+input::placeholder{color:var(--t3)}
+.input-label{font-size:12px;color:var(--t2);font-weight:600;margin-bottom:7px;display:block;letter-spacing:0.2px}
+.input-grp{margin-bottom:14px}
+
+/* PLAYER GRID */
+.player-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.player-chip{background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:12px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;min-height:54px;position:relative;overflow:hidden}
+.player-chip.sel{background:var(--vbg);border-color:var(--vl)}
+.player-chip.sel::after{content:'✓';position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--vl);font-weight:800}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--s4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--t2);flex-shrink:0;letter-spacing:0.3px;transition:all 0.15s}
+.player-chip.sel .avatar{background:var(--v);color:#fff}
+.chip-pname{font-size:14px;font-weight:600;color:var(--t2);line-height:1.2;transition:color 0.15s}
+.player-chip.sel .chip-pname{color:var(--t1)}
+
+/* CHIP CONFIG */
+.chip-cfg{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.chipdot{width:26px;height:26px;border-radius:50%;flex-shrink:0;border:3px solid rgba(255,255,255,0.15)}
+.chipdot-sm{width:18px;height:18px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,0.15)}
+.chip-cfg-name{font-size:13px;color:var(--t2);width:55px;flex-shrink:0;font-weight:500}
+.chip-cfg input{flex:1}
+.chip-unit{font-size:12px;color:var(--t3);flex-shrink:0}
+.chip-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:20px;padding:0 2px;line-height:1;min-width:32px;min-height:44px;display:flex;align-items:center;justify-content:center}
+.add-row{width:100%;background:var(--s3);border:1.5px dashed var(--border2);border-radius:var(--r-sm);padding:11px;color:var(--t3);font-size:13px;font-weight:600;cursor:pointer;text-align:center;margin-top:4px;min-height:44px;transition:all 0.15s;font-family:inherit}
+.add-row:active{background:var(--vbg);color:var(--vl);border-color:var(--vl)}
+
+/* STATS */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat-card{background:var(--s2);border:0.5px solid var(--border);border-radius:var(--r-sm);padding:14px 8px;text-align:center}
+.stat-val{font-size:22px;font-weight:800;color:var(--t1);letter-spacing:-0.5px}
+.stat-lbl{font-size:10px;color:var(--t3);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+
+/* IN-GAME PLAYER */
+.igp{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:0.5px solid var(--border)}
+.igp:last-child{border-bottom:none}
+.igp-l{display:flex;align-items:center;gap:11px}
+.igp-name{font-size:15px;font-weight:700}
+.igp-sub{font-size:12px;color:var(--t3);margin-top:1px}
+
+/* RESULTS */
+.res{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid var(--border)}
+.res:last-child{border-bottom:none}
+.res-l{display:flex;align-items:center;gap:10px}
+.res-pos{font-size:12px;color:var(--t3);width:16px;text-align:center}
+.res-name{font-size:15px;font-weight:700}
+.res-detail{font-size:11px;color:var(--t3);margin-top:1px}
+.res-net{font-size:18px;font-weight:800;letter-spacing:-0.3px}
+.win{color:var(--green)}
+.lose{color:var(--red)}
+.ntrl{color:var(--t2)}
+
+/* DEBTS */
+.debt{display:flex;align-items:center;gap:8px;padding:11px 0;border-bottom:0.5px solid var(--border);font-size:14px}
+.debt:last-child{border-bottom:none}
+.debt-arr{color:var(--t3);font-size:12px}
+.debt-amt{margin-left:auto;font-weight:800;color:var(--gold);font-size:15px}
+
+/* HISTORY */
+.hist-item{background:var(--s2);border:0.5px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color 0.15s;position:relative;overflow:hidden}
+.hist-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--v),var(--green))}
+.hist-item:active{background:var(--s3)}
+.hist-date{font-size:11px;color:var(--t3);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px}
+.hist-players{font-size:13px;color:var(--t2);margin-bottom:8px;line-height:1.5}
+.hist-winner{font-size:15px;font-weight:800;color:var(--green)}
+.hist-meta{font-size:11px;color:var(--t3);margin-top:4px}
+
+/* RANKING PODIUM */
+.podium-wrap{margin-bottom:8px;padding:8px 0 0}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;padding:0 4px;margin-bottom:8px}
+.p-col{display:flex;flex-direction:column;align-items:center;flex:1;animation:podiumIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both}
+@keyframes podiumIn{from{opacity:0;transform:translateY(30px) scale(0.8)}to{opacity:1;transform:translateY(0) scale(1)}}
+.p-col.rank2{animation-delay:0.1s}.p-col.rank1{animation-delay:0s}.p-col.rank3{animation-delay:0.2s}
+.p-avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:0.3px;margin-bottom:6px;position:relative}
+.p-col.rank1 .p-avatar{width:56px;height:56px;font-size:16px;background:linear-gradient(135deg,#f9ca24,#f0932b);color:#fff;box-shadow:0 0 20px rgba(249,202,36,0.4)}
+.p-col.rank2 .p-avatar{width:44px;height:44px;font-size:13px;background:var(--s4);color:var(--t2);border:1.5px solid var(--border2)}
+.p-col.rank3 .p-avatar{width:40px;height:40px;font-size:12px;background:var(--s4);color:var(--t2);border:1.5px solid var(--border2)}
+.p-crown{position:absolute;top:-14px;font-size:16px}
+.p-name{font-size:12px;font-weight:700;color:var(--t1);text-align:center;margin-bottom:3px;line-height:1.2}
+.p-net{font-size:13px;font-weight:800;text-align:center;margin-bottom:8px}
+.p-col.rank1 .p-net{color:var(--gold);font-size:15px}
+.p-col.rank2 .p-net{color:var(--t2)}
+.p-col.rank3 .p-net{color:#c8844a}
+.p-bar{width:100%;border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;padding:12px 0;font-size:18px}
+.p-col.rank1 .p-bar{background:linear-gradient(to bottom,rgba(249,202,36,0.25),rgba(249,202,36,0.08));height:80px;border:0.5px solid rgba(249,202,36,0.2);border-bottom:none}
+.p-col.rank2 .p-bar{background:rgba(255,255,255,0.04);height:58px;border:0.5px solid var(--border);border-bottom:none}
+.p-col.rank3 .p-bar{background:rgba(200,132,74,0.06);height:44px;border:0.5px solid rgba(200,132,74,0.15);border-bottom:none}
+.podium-base{height:2px;background:linear-gradient(to right,transparent,var(--border2),transparent);margin:0 4px 16px}
+
+/* RANK ROWS */
+.rank-row{display:flex;align-items:center;gap:11px;padding:13px 0;border-bottom:0.5px solid var(--border);opacity:0;transform:translateX(-16px)}
+.rank-row.visible{opacity:1;transform:translateX(0);transition:opacity 0.35s ease,transform 0.35s ease}
+.rank-row:last-child{border-bottom:none}
+.rank-num{font-size:14px;font-weight:800;color:var(--t3);width:20px;text-align:center;flex-shrink:0}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-size:15px;font-weight:700}
+.rank-sub{font-size:11px;color:var(--t3);margin-top:1px}
+.rank-bar-track{height:3px;background:var(--s4);border-radius:2px;margin-top:6px;overflow:hidden}
+.rank-bar-fill{height:100%;border-radius:2px;width:0;transition:width 0.7s cubic-bezier(0.4,0,0.2,1)}
+.rank-net{font-size:16px;font-weight:800;flex-shrink:0;letter-spacing:-0.3px}
+
+/* MODAL */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-backdrop.open{display:flex;animation:backdropIn 0.2s ease}
+@keyframes backdropIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--s1);border-radius:24px 24px 0 0;border-top:0.5px solid var(--border2);padding:0 20px calc(28px + var(--safe));width:100%;max-width:430px;max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;animation:sheetUp 0.3s cubic-bezier(0.32,0.72,0,1)}
+@keyframes sheetUp{from{transform:translateY(80px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-handle{width:36px;height:4px;background:var(--s4);border-radius:2px;margin:14px auto 22px}
+.modal-title{font-size:21px;font-weight:800;margin-bottom:18px;color:var(--t1);letter-spacing:-0.4px}
+.modal-actions{display:flex;gap:10px;margin-top:16px}
+.modal-actions .btn{flex:1}
+
+/* MISC */
+.divider{height:0.5px;background:var(--border);margin:14px 0}
+.alert{border-radius:var(--r-sm);padding:13px 15px;font-size:13px;margin-bottom:12px;line-height:1.5}
+.al-purple{background:var(--vbg);border:1px solid rgba(108,92,231,0.2);color:var(--vl)}
+.al-green{background:var(--gbg);border:1px solid rgba(0,206,201,0.2);color:var(--green)}
+.al-warn{background:var(--goldbg);border:1px solid rgba(253,203,110,0.25);color:var(--gold)}
+.back-btn{background:none;border:none;color:var(--vl);font-size:15px;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px;font-weight:700;margin-bottom:6px;min-height:44px;font-family:inherit}
+.empty{text-align:center;padding:64px 24px}
+.empty-icon{font-size:52px;margin-bottom:14px}
+.empty-title{font-size:18px;font-weight:800;color:var(--t2);margin-bottom:6px;letter-spacing:-0.3px}
+.empty-sub{font-size:14px;color:var(--t3)}
+
+/* END GAME INPUT */
+.eg-player{margin-bottom:18px}
+.eg-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.eg-name{font-size:16px;font-weight:800;letter-spacing:-0.2px}
+.eg-chips{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.eg-chip{background:var(--s3);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:11px 12px;display:flex;align-items:center;gap:8px}
+.eg-chip input{background:none;border:none;color:var(--t1);font-size:16px;font-weight:700;width:100%;outline:none;text-align:right;min-width:0;font-family:inherit}
+.eg-chip-name{font-size:11px;color:var(--t2);flex:1;min-width:0;white-space:nowrap;overflow:hidden;font-weight:600}
+
+/* SPLASH / HOME */
+#page-home .topbar{display:none}
+.home-hero{padding:80px 24px 32px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.home-logo{font-size:64px;margin-bottom:16px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.home-title{font-size:36px;font-weight:900;letter-spacing:-1.5px;background:linear-gradient(135deg,var(--vl),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.home-sub{font-size:15px;color:var(--t2);margin-bottom:32px;line-height:1.6}
+.home-suits{font-size:28px;letter-spacing:12px;margin-bottom:28px;opacity:0.6}
+.home-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-bottom:28px}
+.home-stat{background:var(--s2);border:0.5px solid var(--border2);border-radius:var(--r);padding:16px;text-align:center}
+.home-stat-val{font-size:28px;font-weight:900;letter-spacing:-1px;background:linear-gradient(135deg,var(--vl),var(--green2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.home-stat-lbl{font-size:11px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-top:2px}
+
+/* CONFETTI bits */
+@keyframes confettiDrop{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(120px) rotate(720deg);opacity:0}}
+.confetti-bit{position:fixed;width:8px;height:8px;border-radius:2px;animation:confettiDrop 1.2s ease-in forwards;pointer-events:none;z-index:999}
+</style>
+</head>
+<body>
+<div id="glow"><div class="glow-orb" id="g1"></div><div class="glow-orb" id="g2"></div></div>
+<div id="app">
+
+  <!-- PAGE: HOME -->
+  <div class="page active" id="page-home">
+    <div class="topbar"></div>
+    <div class="page-inner">
+      <div class="home-hero">
+        <div class="home-logo">🃏</div>
+        <div class="home-suits">♠ ♥ ♦ ♣</div>
+        <div class="home-title">Poker Night</div>
+        <div class="home-sub">Gestiona tus partidas, fichas y rankings con tus amigos</div>
+        <div class="home-stats" id="home-stats"></div>
+        <button class="btn btn-primary" style="font-size:17px;min-height:56px" onclick="goTo('setup')">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Nueva partida
+        </button>
+        <div id="live-banner" style="display:none;margin-top:12px;width:100%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: SETUP -->
+  <div class="page" id="page-setup">
+    <div class="topbar">
+      <h1>Nueva partida</h1>
+      <div class="topbar-sub">Configura antes de empezar</div>
+    </div>
+    <div class="page-inner">
+      <div class="slabel" style="display:flex;justify-content:space-between;align-items:center">
+        <span>¿Quién juega?</span>
+        <button id="edit-players-btn" onclick="toggleEditPlayers()" style="background:none;border:none;color:var(--vl);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;padding:4px">Editar jugadores</button>
+      </div>
+      <div class="player-grid" id="player-grid"></div>
+      <button class="add-row" style="margin-top:10px" onclick="openModal('modal-addplayer')">+ Añadir jugador</button>
+      <div class="slabel">Buy-in</div>
+      <div class="card card-glow">
+        <label class="input-label">Importe por jugador (€)</label>
+        <input type="number" id="buyin" value="10" min="1">
+      </div>
+      <div class="slabel">Fichas iniciales por jugador</div>
+      <div class="card card-glow">
+        <div id="start-chip-list"></div>
+      </div>
+      <div class="slabel">Valor de cada ficha</div>
+      <div class="card card-glow">
+        <div id="chip-list"></div>
+        <button class="add-row" onclick="addChip()">+ Añadir color</button>
+      </div>
+      <button class="btn btn-primary" style="margin-bottom:8px" onclick="startGame()">
+        <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Iniciar partida
+      </button>
+    </div>
+  </div>
+
+  <!-- PAGE: GAME -->
+  <div class="page" id="page-game">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div>
+          <h1>En juego</h1>
+          <div class="topbar-sub" id="game-sub">Sin partida activa</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="live-badge" style="display:none" class="topbar-badge">EN VIVO</span>
+          <button class="btn btn-secondary btn-sm" id="cancel-btn" onclick="cancelGame()" style="display:none">Cancelar</button>
+          <button class="btn btn-danger btn-sm" id="end-btn" onclick="openEndGame()" style="display:none">Finalizar</button>
+        </div>
+      </div>
+    </div>
+    <div class="page-inner">
+      <div id="no-game" class="empty">
+        <div class="empty-icon">🃏</div>
+        <div class="empty-title">Sin partida activa</div>
+        <div class="empty-sub">Ve al inicio para empezar una partida</div>
+      </div>
+      <div id="game-content" style="display:none">
+        <div class="stat-row">
+          <div class="stat-card"><div class="stat-val" id="s-players">—</div><div class="stat-lbl">Jugadores</div></div>
+          <div class="stat-card"><div class="stat-val" id="s-pot">—</div><div class="stat-lbl">Bote</div></div>
+          <div class="stat-card"><div class="stat-val" id="s-rebuys">0</div><div class="stat-lbl">Rebuys</div></div>
+        </div>
+        <div class="card card-glow">
+          <div class="card-title">Jugadores</div>
+          <div id="igp-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Fichas en juego</div>
+          <div id="chip-vals"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: HISTORY -->
+  <div class="page" id="page-history">
+    <div class="topbar">
+      <div id="hist-hdr-main"><h1>Historial</h1><div class="topbar-sub">Partidas jugadas</div></div>
+      <div id="hist-hdr-detail" style="display:none">
+        <button class="back-btn" onclick="closeDetail()">
+          <svg viewBox="0 0 24 24" style="width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"><polyline points="15 18 9 12 15 6"/></svg>
+          Historial
+        </button>
+        <h1 id="detail-title">Partida</h1>
+      </div>
+    </div>
+    <div class="page-inner">
+      <div id="hist-list-view"><div id="hist-list"></div></div>
+      <div id="hist-detail-view" style="display:none"><div id="detail-content"></div></div>
+    </div>
+  </div>
+
+  <!-- PAGE: RANKING -->
+  <div class="page" id="page-ranking">
+    <div class="topbar"><h1>Ranking</h1><div class="topbar-sub">Ganancias acumuladas</div></div>
+    <div class="page-inner"><div id="ranking-content"></div></div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="bottomnav">
+    <button class="nav-btn active" onclick="goTo('home')" id="nav-home">
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <span>Inicio</span>
+    </button>
+    <button class="nav-btn" onclick="goTo('game')" id="nav-game">
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="live-pip" id="live-pip"></div>
+      <span>En juego</span>
+    </button>
+    <button class="nav-btn" onclick="goTo('history')" id="nav-history">
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <span>Historial</span>
+    </button>
+    <button class="nav-btn" onclick="goTo('ranking')" id="nav-ranking">
+      <div class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+      <span>Ranking</span>
+    </button>
+  </nav>
+</div>
+
+<!-- MODALS -->
+<div class="modal-backdrop" id="modal-addplayer">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuevo jugador</div>
+    <div class="input-grp"><label class="input-label">Nombre</label><input type="text" id="new-player-name" placeholder="Nombre del jugador" autocomplete="off"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-addplayer')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmAddPlayer()">Añadir</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-rebuy">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Rebuy — <span id="rebuy-pname"></span></div>
+    <div class="input-grp"><label class="input-label">Importe (€)</label><input type="number" id="rebuy-amount" value="10" min="1"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-rebuy')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmRebuy()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-endgame">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Fichas al final</div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:20px">¿Cuántas fichas de cada color tiene cada jugador?</p>
+    <div id="eg-inputs"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-endgame')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmEndGame()">Calcular</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-mismatch">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚠️ Las fichas no cuadran</div>
+    <div class="alert al-warn" id="mismatch-detail" style="margin-bottom:16px"></div>
+    <p style="font-size:14px;color:var(--t2);margin-bottom:4px">Puede ser un error de conteo. ¿Qué quieres hacer?</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+      <button class="btn btn-secondary" onclick="goBackChips()">Volver a contar</button>
+      <button class="btn btn-warn" onclick="forceContinue()">Continuar igualmente</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-confirm">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="confirm-title">¿Estás seguro?</div>
+    <p style="font-size:14px;color:var(--t2);margin-bottom:8px" id="confirm-msg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-action-btn" onclick="">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-results">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Resultados 🏆</div>
+    <div id="results-content"></div>
+    <button class="btn btn-green" style="margin-top:18px" onclick="saveGame()">Guardar partida</button>
+  </div>
+</div>
+
+<script>
+const DEFAULTS=['Urigol','Pepi','Del gey','Tibu','Jomas','Carre','Estebali','Poyi','Peini','Tafu'];
+const CHIP_COLORS=[
+  {name:'Blanca',hex:'#f0f0f0'},{name:'Roja',hex:'#e04b4b'},{name:'Azul',hex:'#4a8ee8'},
+  {name:'Verde',hex:'#3db96b'},{name:'Negra',hex:'#3a3a3d'},{name:'Amarilla',hex:'#e8c23a'},
+  {name:'Rosa',hex:'#d45c8a'},{name:'Naranja',hex:'#e87c3a'},
+];
+
+let S={
+  players:[...DEFAULTS],selected:[],
+  chips:[{color:CHIP_COLORS[0],value:0.10,startCount:10},{color:CHIP_COLORS[1],value:0.50,startCount:5},{color:CHIP_COLORS[2],value:1.00,startCount:3}],
+  game:null,games:[],rebuyIdx:null,pendingResults:null,pendingFinalChips:null,
+};
+
+function persist(){try{localStorage.setItem('pn4',JSON.stringify(S))}catch(e){}}
+function hydrate(){
+  try{
+    const d=localStorage.getItem('pn4');
+    if(d){const p=JSON.parse(d);if(p.players)S.players=p.players;if(p.chips)S.chips=p.chips;if(p.games)S.games=p.games;if(p.game)S.game=p.game;}
+  }catch(e){}
+}
+function ini(n){return n.trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2)}
+
+function goTo(pg){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const pageEl=document.getElementById('page-'+pg), navEl=document.getElementById('nav-'+pg);
+  if(pageEl)pageEl.classList.add('active');
+  if(navEl)navEl.classList.add('active');
+  // Animate glow based on page
+  const g1=document.getElementById('g1'),g2=document.getElementById('g2');
+  if(pg==='ranking'){g1.style.background='#f9ca24';g2.style.background='#e17055'}
+  else if(pg==='game'){g1.style.background='#00cec9';g2.style.background='#6c5ce7'}
+  else{g1.style.background='#6c5ce7';g2.style.background='#00cec9'}
+  if(pg==='home')renderHome();
+  if(pg==='game')renderGame();
+  if(pg==='history')renderHistory();
+  if(pg==='ranking')renderRanking();
+}
+function openModal(id){const el=document.getElementById(id);if(el)el.classList.add('open')}
+function closeModal(id){const el=document.getElementById(id);if(el)el.classList.remove('open')}
+function updateLivePip(){
+  const on=!!S.game;
+  const pip=document.getElementById('live-pip');
+  if(pip)pip.classList.toggle('on',on);
+}
+
+// HOME
+function renderHome(){
+  const totalGames=S.games.length;
+  const allStats={};
+  S.games.forEach(g=>{g.results.forEach(r=>{if(!allStats[r.name])allStats[r.name]={net:0};allStats[r.name].net+=r.net;})});
+  const vals=Object.values(allStats);
+  const topPlayer=vals.length?vals.sort((a,b)=>b.net-a.net)[0]:null;
+  document.getElementById('home-stats').innerHTML=`
+    <div class="home-stat"><div class="home-stat-val">${totalGames}</div><div class="home-stat-lbl">Partidas</div></div>
+    <div class="home-stat"><div class="home-stat-val">${S.players.length}</div><div class="home-stat-lbl">Jugadores</div></div>`;
+  const lb=document.getElementById('live-banner');
+  if(S.game){
+    lb.style.display='block';
+    lb.innerHTML=`<button class="btn btn-ghost" onclick="goTo('game')">🟢 Partida en curso — Ver</button>`;
+  } else {lb.style.display='none'}
+}
+
+// SETUP
+function renderPlayers(){
+  document.getElementById('player-grid').innerHTML=S.players.map(p=>{
+    const sel=S.selected.includes(p);
+    const esc=p.replace(/'/g,"\\'");
+    return`<div class="player-chip${sel?' sel':''}" onclick="toggleP('${esc}')"><div class="avatar">${ini(p)}</div><span class="chip-pname">${p}</span>${S.editPlayers?`<button onclick="event.stopPropagation();removePlayer('${esc}')" style="margin-left:auto;background:none;border:none;color:var(--red);font-size:20px;line-height:1;min-width:28px;min-height:28px;cursor:pointer">×</button>`:''}</div>`;
+  }).join('');
+  const btn=document.getElementById('edit-players-btn');
+  if(btn)btn.textContent=S.editPlayers?'Listo':'Editar jugadores';
+}
+function toggleEditPlayers(){
+  S.editPlayers=!S.editPlayers;
+  renderPlayers();
+}
+function removePlayer(name){
+  confirmAction('Se eliminará "'+name+'" de la lista de jugadores.', function(){
+    S.players=S.players.filter(p=>p!==name);
+    S.selected=S.selected.filter(p=>p!==name);
+    persist();
+    renderPlayers();
+  }, '¿Eliminar jugador?');
+}
+function toggleP(name){
+  if(S.editPlayers)return;
+  const i=S.selected.indexOf(name);
+  if(i>-1)S.selected.splice(i,1);else S.selected.push(name);
+  renderPlayers();
+}
+function renderChipConfig(){
+  document.getElementById('chip-list').innerHTML=S.chips.map((c,i)=>`
+    <div class="chip-cfg">
+      <input type="color" value="${c.color.hex}" style="width:30px;height:30px;border-radius:50%;border:3px solid rgba(255,255,255,0.15);padding:0;background:none;flex-shrink:0;cursor:pointer" onchange="S.chips[${i}].color.hex=this.value;persist();renderChipConfig();renderStartChips()">
+      <input type="text" value="${c.color.name}" style="width:70px;flex-shrink:0;padding:9px 8px;font-size:13px" onchange="S.chips[${i}].color.name=this.value||'Ficha';persist();renderStartChips()">
+      <input type="number" value="${c.value}" min="0.01" step="0.01" style="max-width:70px" onchange="setChipValue(${i},this)">
+      <span class="chip-unit">€</span>
+      <button class="chip-del" onclick="S.chips.splice(${i},1);renderChipConfig();renderStartChips()">×</button>
+    </div>`).join('');
+}
+function renderStartChips(){
+  document.getElementById('start-chip-list').innerHTML=S.chips.map((c,i)=>`
+    <div class="chip-cfg">
+      <div class="chipdot" style="background:${c.color.hex}"></div>
+      <span class="chip-cfg-name">${c.color.name}</span>
+      <input type="number" value="${c.startCount||0}" min="0" step="1" style="max-width:80px" onchange="S.chips[${i}].startCount=parseInt(this.value)||0">
+      <span class="chip-unit">fichas</span>
+    </div>`).join('');
+}
+function setChipValue(i,el){
+  let v=parseFloat(el.value)||0;
+  const buyin=parseFloat(document.getElementById('buyin').value)||10;
+  if(v>buyin){
+    v=buyin;
+    el.value=v;
+    alert('El valor de una ficha no puede superar el buy-in ('+buyin.toFixed(2)+'€). Se ha ajustado.');
+  }
+  S.chips[i].value=v;
+}
+function addChip(){
+  const palette=['#f0f0f0','#e04b4b','#4a8ee8','#3db96b','#3a3a3d','#e8c23a','#d45c8a','#e87c3a','#9b59b6','#1abc9c'];
+  const hex=palette[S.chips.length % palette.length];
+  S.chips.push({color:{name:'Ficha '+(S.chips.length+1),hex},value:0.25,startCount:5});
+  renderChipConfig();renderStartChips();
+}
+function confirmAddPlayer(){
+  const name=document.getElementById('new-player-name').value.trim();
+  if(!name)return;
+  if(!S.players.includes(name))S.players.push(name);
+  document.getElementById('new-player-name').value='';
+  closeModal('modal-addplayer');renderPlayers();
+}
+function startGame(){
+  if(S.selected.length<2){alert('Selecciona al menos 2 jugadores.');return}
+  if(S.chips.length===0){alert('Añade al menos un color de ficha.');return}
+  const buyin=parseFloat(document.getElementById('buyin').value)||10;
+  S.game={
+    date:new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'}),
+    ts:Date.now(),buyin,
+    chips:JSON.parse(JSON.stringify(S.chips)),
+    players:S.selected.map(name=>({name,invested:buyin,rebuys:0})),
+    totalRebuys:0,
+  };
+  S.selected=[];persist();updateLivePip();renderPlayers();goTo('game');
+}
+
+// GAME
+function renderGame(){
+  const g=S.game;
+  updateLivePip();
+  const noG=document.getElementById('no-game'),gc=document.getElementById('game-content'),eb=document.getElementById('end-btn'),cb=document.getElementById('cancel-btn'),lb=document.getElementById('live-badge');
+  if(!g){noG.style.display='block';gc.style.display='none';eb.style.display='none';cb.style.display='none';lb.style.display='none';document.getElementById('game-sub').textContent='Sin partida activa';return}
+  noG.style.display='none';gc.style.display='block';eb.style.display='flex';cb.style.display='flex';lb.style.display='inline-flex';
+  document.getElementById('game-sub').textContent=g.date+' · buy-in '+g.buyin.toFixed(2)+'€';
+  const pot=g.players.reduce((s,p)=>s+p.invested,0);
+  document.getElementById('s-players').textContent=g.players.length;
+  document.getElementById('s-pot').textContent=pot.toFixed(0)+'€';
+  document.getElementById('s-rebuys').textContent=g.totalRebuys;
+  document.getElementById('igp-list').innerHTML=g.players.map((p,i)=>`
+    <div class="igp">
+      <div class="igp-l">
+        <div class="avatar" style="background:var(--vbg);color:var(--vl)">${ini(p.name)}</div>
+        <div><div class="igp-name">${p.name}</div><div class="igp-sub">${p.invested.toFixed(2)}€ inv.${p.rebuys>0?' · '+p.rebuys+' rebuy'+(p.rebuys>1?'s':''):''}</div></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="openRebuy(${i})">+ Rebuy</button>
+    </div>`).join('');
+  document.getElementById('chip-vals').innerHTML=g.chips.map(c=>`
+    <div class="chip-cfg" style="margin-bottom:8px">
+      <div class="chipdot" style="background:${c.color.hex}"></div>
+      <span class="chip-cfg-name">${c.color.name}</span>
+      <span style="color:var(--t1);font-weight:700">${c.value.toFixed(2)}€/ficha</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--t3)">${c.startCount||0} al inicio</span>
+    </div>`).join('');
+}
+function cancelGame(){
+  confirmAction('La partida activa se descartará y no se guardará en el historial.', function(){
+    S.game=null;
+    persist();updateLivePip();renderGame();
+  }, '¿Cancelar partida?');
+}
+function openRebuy(i){
+  S.rebuyIdx=i;
+  document.getElementById('rebuy-pname').textContent=S.game.players[i].name;
+  document.getElementById('rebuy-amount').value=S.game.buyin;
+  openModal('modal-rebuy');
+}
+function confirmRebuy(){
+  const amt=parseFloat(document.getElementById('rebuy-amount').value)||0;
+  if(amt<=0)return;
+  S.game.players[S.rebuyIdx].invested+=amt;
+  S.game.players[S.rebuyIdx].rebuys+=1;
+  S.game.totalRebuys+=1;
+  persist();closeModal('modal-rebuy');renderGame();
+}
+
+// END GAME
+function openEndGame(){
+  const g=S.game;
+  document.getElementById('eg-inputs').innerHTML=g.players.map((p,pi)=>`
+    <div class="eg-player">
+      <div class="eg-header">
+        <div class="avatar" style="width:28px;height:28px;font-size:10px;background:var(--vbg);color:var(--vl)">${ini(p.name)}</div>
+        <span class="eg-name">${p.name}</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--t3)">inv. ${p.invested.toFixed(2)}€</span>
+      </div>
+      <div class="eg-chips">
+        ${g.chips.map((c,ci)=>`
+          <div class="eg-chip">
+            <div class="chipdot-sm" style="background:${c.color.hex}"></div>
+            <span class="eg-chip-name">${c.color.name}</span>
+            <input type="number" id="eg_${pi}_${ci}" value="0" min="0" step="1" inputmode="numeric">
+          </div>`).join('')}
+      </div>
+    </div>
+    ${pi<g.players.length-1?'<div class="divider"></div>':''}`).join('');
+  openModal('modal-endgame');
+}
+function confirmEndGame(){
+  const g=S.game;
+  const finalChips=g.players.map((p,pi)=>g.chips.map((c,ci)=>parseInt(document.getElementById('eg_'+pi+'_'+ci).value)||0));
+  S.pendingFinalChips=finalChips;
+  const mismatches=[];
+  g.chips.forEach((c,ci)=>{
+    const expected=(c.startCount||0)*g.players.length+(c.startCount||0)*g.totalRebuys;
+    const actual=finalChips.reduce((s,pc)=>s+pc[ci],0);
+    const diff=actual-expected;
+    if(Math.abs(diff)>0)mismatches.push({name:c.color.name,hex:c.color.hex,expected,actual,diff});
+  });
+  closeModal('modal-endgame');
+  if(mismatches.length>0){
+    document.getElementById('mismatch-detail').innerHTML=mismatches.map(m=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div class="chipdot-sm" style="background:${m.hex}"></div>
+        <span>${m.name}: contadas <strong>${m.actual}</strong>, esperadas <strong>${m.expected}</strong> (${m.diff>0?'+':''}${m.diff})</span>
+      </div>`).join('');
+    openModal('modal-mismatch');
+  }else{showResults()}
+}
+function goBackChips(){closeModal('modal-mismatch');openModal('modal-endgame')}
+function forceContinue(){closeModal('modal-mismatch');showResults()}
+function showResults(){
+  const g=S.game,fc=S.pendingFinalChips;
+  const results=g.players.map((p,pi)=>({name:p.name,invested:p.invested,finalValue:g.chips.reduce((s,c,ci)=>s+fc[pi][ci]*c.value,0),net:0}));
+  results.forEach(r=>{r.net=r.finalValue-r.invested});
+  S.pendingResults=results;
+  const sorted=[...results].sort((a,b)=>b.net-a.net);
+  const debts=calcDebts(results);
+  document.getElementById('results-content').innerHTML=`
+    <div class="card card-glow" style="margin-bottom:12px">
+      <div class="card-title">Clasificación</div>
+      ${sorted.map((r,i)=>`
+        <div class="res">
+          <div class="res-l">
+            <span class="res-pos">${i+1}</span>
+            <div class="avatar" style="background:${r.net>0?'var(--gbg)':r.net<0?'var(--rbg)':'var(--s4)'};color:${r.net>0?'var(--green)':r.net<0?'var(--red)':'var(--t2)'}">${ini(r.name)}</div>
+            <div><div class="res-name">${r.name}</div><div class="res-detail">fichas: ${r.finalValue.toFixed(2)}€ · inv: ${r.invested.toFixed(2)}€</div></div>
+          </div>
+          <span class="res-net ${r.net>0?'win':r.net<0?'lose':'ntrl'}">${r.net>0?'+':''}${r.net.toFixed(2)}€</span>
+        </div>`).join('')}
+    </div>
+    ${debts.length>0?`<div class="card"><div class="card-title">Pagos pendientes</div>${debts.map(d=>`<div class="debt"><span style="font-weight:700">${d.from}</span><span class="debt-arr">→</span><span style="font-weight:700">${d.to}</span><span class="debt-amt">${d.amount.toFixed(2)}€</span></div>`).join('')}</div>`:'<div class="alert al-green">✓ Sin pagos pendientes, todo cuadrado.</div>'}`;
+  openModal('modal-results');
+}
+function calcDebts(results){
+  let debtors=results.filter(r=>r.net<0).map(r=>({name:r.name,amt:-r.net}));
+  let creditors=results.filter(r=>r.net>0).map(r=>({name:r.name,amt:r.net}));
+  const out=[];let i=0,j=0;
+  while(i<debtors.length&&j<creditors.length){
+    const pay=Math.min(debtors[i].amt,creditors[j].amt);
+    if(pay>0.005)out.push({from:debtors[i].name,to:creditors[j].name,amount:pay});
+    debtors[i].amt-=pay;creditors[j].amt-=pay;
+    if(debtors[i].amt<0.005)i++;if(creditors[j].amt<0.005)j++;
+  }
+  return out;
+}
+
+function spawnConfetti(){
+  const colors=['#6c5ce7','#00cec9','#fdcb6e','#ff6b6b','#a29bfe','#55efc4'];
+  for(let i=0;i<18;i++){
+    const el=document.createElement('div');
+    el.className='confetti-bit';
+    el.style.cssText=`left:${20+Math.random()*60}%;top:30%;background:${colors[Math.floor(Math.random()*colors.length)]};animation-delay:${Math.random()*0.4}s;animation-duration:${0.9+Math.random()*0.5}s;transform:rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),1600);
+  }
+}
+
+function saveGame(){
+  S.games.unshift({date:S.game.date,ts:S.game.ts,buyin:S.game.buyin,totalRebuys:S.game.totalRebuys,players:S.game.players.map(p=>p.name),results:S.pendingResults});
+  S.game=null;S.pendingResults=null;S.pendingFinalChips=null;
+  persist();updateLivePip();closeModal('modal-results');
+  spawnConfetti();
+  setTimeout(()=>goTo('history'),300);
+}
+
+// HISTORY
+function renderHistory(){
+  document.getElementById('hist-list-view').style.display='block';
+  document.getElementById('hist-detail-view').style.display='none';
+  document.getElementById('hist-hdr-main').style.display='block';
+  document.getElementById('hist-hdr-detail').style.display='none';
+  const el=document.getElementById('hist-list');
+  if(!S.games.length){el.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Sin partidas aún</div><div class="empty-sub">Las partidas guardadas aparecerán aquí</div></div>';return}
+  el.innerHTML=S.games.map((g,i)=>{
+    const winner=[...g.results].sort((a,b)=>b.net-a.net)[0];
+    return`<div class="hist-item" onclick="showDetail(${i})">
+      <div class="hist-date">${g.date} · ${g.players.length} jugadores · buy-in ${g.buyin.toFixed(2)}€</div>
+      <div class="hist-players">${g.players.join(' · ')}</div>
+      <div class="hist-winner">🏆 ${winner.name} +${winner.net.toFixed(2)}€</div>
+      <div class="hist-meta">${g.totalRebuys} rebuys</div>
+    </div>`;
+  }).join('');
+}
+function showDetail(i){
+  const g=S.games[i];
+  document.getElementById('hist-list-view').style.display='none';
+  document.getElementById('hist-detail-view').style.display='block';
+  document.getElementById('hist-hdr-main').style.display='none';
+  document.getElementById('hist-hdr-detail').style.display='block';
+  document.getElementById('detail-title').textContent=g.date;
+  const sorted=[...g.results].sort((a,b)=>b.net-a.net);
+  const debts=calcDebts(g.results);
+  document.getElementById('detail-content').innerHTML=`
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-val">${g.players.length}</div><div class="stat-lbl">jugadores</div></div>
+      <div class="stat-card"><div class="stat-val">${(g.buyin*g.players.length).toFixed(0)}€</div><div class="stat-lbl">bote base</div></div>
+      <div class="stat-card"><div class="stat-val">${g.totalRebuys}</div><div class="stat-lbl">rebuys</div></div>
+    </div>
+    <div class="card card-glow">
+      <div class="card-title">Clasificación</div>
+      ${sorted.map((r,idx)=>`
+        <div class="res">
+          <div class="res-l">
+            <span class="res-pos">${idx+1}</span>
+            <div class="avatar" style="background:${r.net>0?'var(--gbg)':r.net<0?'var(--rbg)':'var(--s4)'};color:${r.net>0?'var(--green)':r.net<0?'var(--red)':'var(--t2)'}">${ini(r.name)}</div>
+            <div><div class="res-name">${r.name}</div><div class="res-detail">invertido: ${r.invested.toFixed(2)}€</div></div>
+          </div>
+          <span class="res-net ${r.net>0?'win':r.net<0?'lose':'ntrl'}">${r.net>0?'+':''}${r.net.toFixed(2)}€</span>
+        </div>`).join('')}
+    </div>
+    ${debts.length>0?`<div class="card"><div class="card-title">Pagos</div>${debts.map(d=>`<div class="debt"><span style="font-weight:700">${d.from}</span><span class="debt-arr">→</span><span style="font-weight:700">${d.to}</span><span class="debt-amt">${d.amount.toFixed(2)}€</span></div>`).join('')}</div>`:'<div class="alert al-green">✓ Sin pagos pendientes.</div>'}
+    <button class="btn btn-danger" style="margin-top:8px" onclick="deleteGame(${i})">
+      <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      Eliminar partida
+    </button>`;
+}
+function confirmAction(msg, fn, title){
+  document.getElementById('confirm-title').textContent = title || '¿Estás seguro?';
+  document.getElementById('confirm-msg').textContent = msg;
+  const btn = document.getElementById('confirm-action-btn');
+  btn.onclick = function(){ closeModal('modal-confirm'); fn(); };
+  openModal('modal-confirm');
+}
+function deleteGame(i){
+  confirmAction('Esta acción no se puede deshacer. La partida se borrará del historial y el ranking se actualizará.', function(){
+    S.games.splice(i,1);
+    persist();
+    closeDetail();
+    renderHistory();
+  }, '¿Eliminar partida?');
+}
+function closeDetail(){
+  document.getElementById('hist-list-view').style.display='block';
+  document.getElementById('hist-detail-view').style.display='none';
+  document.getElementById('hist-hdr-main').style.display='block';
+  document.getElementById('hist-hdr-detail').style.display='none';
+}
+
+// RANKING
+function renderRanking(){
+  const el=document.getElementById('ranking-content');
+  if(!S.games.length){el.innerHTML='<div class="empty"><div class="empty-icon">🏆</div><div class="empty-title">Sin datos aún</div><div class="empty-sub">Juega y guarda partidas para ver el ranking</div></div>';return}
+  const stats={};
+  S.games.forEach(g=>{
+    const winner=[...g.results].sort((a,b)=>b.net-a.net)[0];
+    g.results.forEach(r=>{
+      if(!stats[r.name])stats[r.name]={name:r.name,net:0,games:0,wins:0};
+      stats[r.name].net+=r.net;stats[r.name].games+=1;
+      if(r.name===winner.name)stats[r.name].wins+=1;
+    });
+  });
+  const sorted=Object.values(stats).sort((a,b)=>b.net-a.net);
+  const maxAbs=Math.max(...sorted.map(s=>Math.abs(s.net)),1);
+
+  // Podium
+  let podHTML='';
+  if(sorted.length>=2){
+    const order=sorted.length>=3?[sorted[1],sorted[0],sorted[2]]:[null,sorted[0],sorted[1]];
+    const cls=['rank2','rank1','rank3'],medals=['🥈','🥇','🥉'];
+    podHTML=`<div class="podium-wrap"><div class="podium">${order.map((s,i)=>s?`
+      <div class="p-col ${cls[i]}">
+        <div class="p-avatar">${i===1?'<span class="p-crown">👑</span>':''}${ini(s.name)}</div>
+        <div class="p-name">${s.name}</div>
+        <div class="p-net">${s.net>0?'+':''}${s.net.toFixed(2)}€</div>
+        <div class="p-bar">${medals[i]}</div>
+      </div>`:'<div class="p-col"></div>').join('')}</div>
+      <div class="podium-base"></div>
+    </div>`;
+  }
+
+  // Rest of list
+  const listStart=sorted.length>=3?3:0;
+  const listRows=sorted.slice(listStart).map((s,i)=>{
+    const pos=listStart+i+1;
+    const pct=Math.round(Math.abs(s.net)/maxAbs*100);
+    const barColor=s.net>0?'var(--green)':s.net<0?'var(--red)':'var(--t3)';
+    return`<div class="rank-row" data-bar="${pct}" data-color="${barColor}" style="animation-delay:${i*0.06}s">
+      <span class="rank-num">${pos}</span>
+      <div class="avatar" style="background:${s.net>0?'var(--gbg)':s.net<0?'var(--rbg)':'var(--s4)'};color:${s.net>0?'var(--green)':s.net<0?'var(--red)':'var(--t2)'}">${ini(s.name)}</div>
+      <div class="rank-info">
+        <div class="rank-name">${s.name}</div>
+        <div class="rank-sub">${s.games} partida${s.games!==1?'s':''} · ${s.wins} victoria${s.wins!==1?'s':''}</div>
+        <div class="rank-bar-track"><div class="rank-bar-fill" style="background:${barColor}"></div></div>
+      </div>
+      <span class="rank-net ${s.net>0?'win':s.net<0?'lose':'ntrl'}">${s.net>0?'+':''}${s.net.toFixed(2)}€</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=podHTML+(listRows?`<div class="card">${listRows}</div>`:'');
+
+  // Animate rows in with stagger
+  setTimeout(()=>{
+    el.querySelectorAll('.rank-row').forEach((row,i)=>{
+      setTimeout(()=>{
+        row.classList.add('visible');
+        const pct=row.dataset.bar,color=row.dataset.color;
+        const fill=row.querySelector('.rank-bar-fill');
+        if(fill){setTimeout(()=>{fill.style.width=pct+'%'},100)}
+      },i*60);
+    });
+  },50);
+}
+
+// INIT
+hydrate();renderPlayers();renderChipConfig();renderStartChips();updateLivePip();
+</script>
+</body>
+</html>
